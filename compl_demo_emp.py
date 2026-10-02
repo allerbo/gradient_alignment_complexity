@@ -74,7 +74,7 @@ def get_S_rf1(rf, X_tr, X_te):
 
 
 
-def get_gac(S_tr, S_te, y_tr):
+def get_efc(S_tr, S_te, y_tr):
   K=S_tr
   if np.any(np.sum(K,axis=0)==0):
     return np.nan
@@ -118,21 +118,23 @@ max_leafs=range(2,51)
 n_trees=range(3,51)
 
 
-COMPL_DICT={'GAC': 'compl_gacs', 'ENP': 'compl_enps', 'GENP-V': 'compl_genps', 'vNE': 'compl_vnes', 'GENP-RX': 'compl_rxs', '$\\|\\hat{\\theta}\\|^2_2$': 'compl_norms'}
-LABS_DICT={'gac': 'GAC', 'vne': 'vNE', 'enp': 'ENP', 'genpv': 'GENP-V', 'genprx': 'GENP-RX', 'norm': '$\\|\\hat{\\theta}\\|^2_2$'}
-ALGS_DICT={'gac': get_gac, 'vne': get_vne, 'enp': get_enp, 'genpv': get_genpv, 'genprx': get_genprx}
+COMPL_DICT={'EFC': 'compl_efcs', 'ENP': 'compl_enps', 'GENP-V': 'compl_genps', 'vNE': 'compl_vnes', 'GENP-RX': 'compl_rxs', '$\\|\\hat{\\theta}\\|^2_2$': 'compl_norms'}
+LABS_DICT={'efc': 'EFC', 'vne': 'vNE', 'enp': 'ENP', 'genpv': 'GENP-V', 'genprx': 'GENP-RX', 'norm': '$\\|\\hat{\\theta}\\|^2_2$'}
+ALGS_DICT={'efc': get_efc, 'vne': get_vne, 'enp': get_enp, 'genpv': get_genpv, 'genprx': get_genprx}
 ALGS1_DICT={'knn': get_S_knn, 'dt': get_S_dt, 'rf': get_S_rf}
 
-COMPL_ALGS=['gac', 'enp', 'genpv', 'genprx']
+COMPL_ALGS=['efc', 'enp', 'genpv', 'genprx']
 FIG_APDX=''
 FIG2=False
+Y_TICKS=[[0.98, 0.99],[0.640, 0.643],[0.5,0.6],[0.42,0.43], [None, None]]
 
 for arg in range(1,len(sys.argv)):
   exec(sys.argv[arg])
 
 if FIG2:
-  COMPL_ALGS=['gac', 'enp', 'genpv', 'genprx', 'vne']
+  COMPL_ALGS=['efc', 'enp', 'genpv', 'genprx', 'vne']
   FIG_APDX='2'
+  Y_TICKS=[[0.95, 0.99],[0.62, 0.65],[0.5,0.6],[0.4,0.5], [0.95, 0.99]]
 
 
 lines=[]
@@ -146,6 +148,7 @@ fig, axs=plt.subplots(1,3,figsize=(11,2.45))
 
 d=1
 n=20
+
 
 for alg, title, xlab, sweeps, ax in zip(['knn','dt','rf'], ['k-Nearest Neighbors', 'Decision Trees', 'Random Forests'], ['$\\kappa$', '$N^{\\text{max}}_{\\text{leaf}}$', '$N_{\\text{tree}}$'], [ks,max_leafs,n_trees], axs):
   compls_sweep={}
@@ -169,7 +172,7 @@ for alg, title, xlab, sweeps, ax in zip(['knn','dt','rf'], ['k-Nearest Neighbors
     axts=[ax, ax.twinx(), ax.twinx(), ax.twinx()]
     if FIG2:
       axts.append(ax)
-  for c, (compl_alg, yticks) in enumerate(zip(COMPL_ALGS, [[0.98, 0.99],[0.640, 0.643],[0.5,0.6],[0.42,0.43], [None, None]])):
+  for c, (compl_alg, yticks) in enumerate(zip(COMPL_ALGS, Y_TICKS)):
     if alg=='rf':
       if FIG2:
         axts[c].plot(sweeps, np.nanmedian(np.array(compls_sweep[compl_alg]),axis=1), 'C'+str(c), zorder=5-c)
@@ -177,7 +180,7 @@ for alg, title, xlab, sweeps, ax in zip(['knn','dt','rf'], ['k-Nearest Neighbors
         axts[c].plot(sweeps, np.nanquantile(np.array(compls_sweep[compl_alg]),q=0.75,axis=1), 'C'+str(c)+':', zorder=5-c, lw=1)
       else:
         axts[c].plot(sweeps, np.nanmean(np.array(compls_sweep[compl_alg]),axis=1), 'C'+str(c), zorder=5-c)
-        axts[c].set_yticks(yticks)
+      axts[c].set_yticks(yticks)
       axts[c].set_zorder(5-c)
       axts[c].patch.set_visible(False)
       if c<4:
@@ -209,7 +212,7 @@ for alg, title, xlab, sweeps, ax in zip(['knn','dt','rf'], ['k-Nearest Neighbors
   ax.set_title(title)
   fig.legend(lines, labs, loc='lower center', ncol=len(lines))
   fig.tight_layout()
-  fig.subplots_adjust(bottom=.35)
+  fig.subplots_adjust(bottom=.32)
   fig.savefig('figures/compl_demo_emp'+FIG_APDX+'.pdf')
 
 #d=1

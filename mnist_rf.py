@@ -1,5 +1,7 @@
 import numpy as np
 import sys
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from sklearn.ensemble import RandomForestClassifier
@@ -10,7 +12,7 @@ plt.rcParams.update({ "text.latex.preamble": r""" \usepackage[T1]{fontenc} \usep
 
 lines=[]
 labs=[]
-for c,txt in zip([0,1,2], ['Training MSE', 'Test MSE', 'GAC (right y-axis)']):
+for c,txt in zip([0,1,2], ['Training MSE', 'Test MSE', 'EFC (right y-axis)']):
   lines.append(Line2D([0],[0],color='C'+str(c),lw=2))
   labs.append(txt)
 def forward(p):
@@ -25,7 +27,7 @@ def get_mse(y, fh):
 
 
 
-def get_gac(rf, X_tr):
+def get_efc(rf, X_tr):
   n = X_tr.shape[0]
   Ks = []
   for tree, es in zip(rf.estimators_, rf.estimators_samples_):
@@ -73,13 +75,13 @@ x_ticklabels= np.array([f"{l}/{t}" for l, t in zip(max_leafs, n_trees)])[tick_in
 
 mse_tr_seeds=[]
 mse_te_seeds=[]
-gac_seeds=[]
+efc_seeds=[]
 
 for seed in range(10):
   X_tr, y_tr, X_te, y_te = load_mnist(n_tr=10000,n_te=10000, seed=seed)
   mse_trs=[]
   mse_tes=[]
-  gacs=[]
+  efcs=[]
   for max_leaf, n_tree in zip(max_leafs, n_trees):
     rf = RandomForestClassifier(n_estimators=n_tree, max_leaf_nodes=max_leaf, n_jobs=-1, bootstrap=BOOT, random_state=seed)
     _=rf.fit(X_tr, y_tr)
@@ -87,22 +89,22 @@ for seed in range(10):
     fh_te= rf.predict_proba(X_te)
     mse_trs.append(get_mse(y_tr, fh_tr))
     mse_tes.append(get_mse(y_te, fh_te))
-    gacs.append(get_gac(rf, X_tr))
-    print( f'seed={seed} | max_leaf={max_leaf:<4} | n_tree={n_tree:<2} | train loss={mse_trs[-1]:.4f} | test loss={mse_tes[-1]:.4f} | gac={gacs[-1]:.4f} | ')
+    efcs.append(get_efc(rf, X_tr))
+    print( f'seed={seed} | max_leaf={max_leaf:<4} | n_tree={n_tree:<2} | train loss={mse_trs[-1]:.4f} | test loss={mse_tes[-1]:.4f} | efc={efcs[-1]:.4f} | ')
   
   mse_tr_seeds.append(mse_trs)
   mse_te_seeds.append(mse_tes)
-  gac_seeds.append(gacs)
+  efc_seeds.append(efcs)
   
   mse_tr_mean=np.mean(mse_tr_seeds,0)
   mse_te_mean=np.mean(mse_te_seeds,0)
-  gac_mean=np.mean(gac_seeds,0)
+  efc_mean=np.mean(efc_seeds,0)
   mse_tr_d1=np.quantile(np.array(mse_tr_seeds),q=0.1,axis=0)
   mse_tr_d9=np.quantile(np.array(mse_tr_seeds),q=0.9,axis=0)
   mse_te_d1=np.quantile(np.array(mse_te_seeds),q=0.1,axis=0)
   mse_te_d9=np.quantile(np.array(mse_te_seeds),q=0.9,axis=0)
-  gac_d1=np.quantile(np.array(gac_seeds),q=0.1,axis=0)
-  gac_d9=np.quantile(np.array(gac_seeds),q=0.9,axis=0)
+  efc_d1=np.quantile(np.array(efc_seeds),q=0.1,axis=0)
+  efc_d9=np.quantile(np.array(efc_seeds),q=0.9,axis=0)
   
   fig, axs = plt.subplots(1, 2, figsize=(8, 2.5))
   
@@ -117,22 +119,22 @@ for seed in range(10):
   _=axs[0].set_xticklabels(x_ticklabels, fontsize=9)
   
   ax0t=axs[0].twinx()
-  _=ax0t.plot(compl_proxy, gac_mean, 'C2', marker="o", markersize=3)
-  _=ax0t.plot(compl_proxy, gac_d1, 'C2:')
-  _=ax0t.plot(compl_proxy, gac_d9, 'C2:')
+  _=ax0t.plot(compl_proxy, efc_mean, 'C2', marker="o", markersize=3)
+  _=ax0t.plot(compl_proxy, efc_d1, 'C2:')
+  _=ax0t.plot(compl_proxy, efc_d9, 'C2:')
   _=ax0t.set_yscale('function', functions=(forward, inverse))
-  y_ticks=np.linspace(forward(np.min(gac_mean)), forward(np.max(gac_mean)),5)
+  y_ticks=np.linspace(forward(np.min(efc_mean)), forward(np.max(efc_mean)),5)
   p_ticks = inverse(y_ticks)
   _=ax0t.set_yticks(p_ticks)
-  _=ax0t.set_yticklabels([f"{p:.3f}" for p in p_ticks])
+  _=ax0t.set_yticklabels([f"{p:.3f}" for p in p_ticks], color='#1A601A')
   
-  _=axs[1].plot(gac_mean, mse_tr_mean, 'C0', marker="o", markersize=3)
-  _=axs[1].plot(gac_mean, mse_te_mean, 'C1', marker="o", markersize=3)
-  _=axs[1].plot(gac_mean, mse_tr_d1, 'C0:')
-  _=axs[1].plot(gac_mean, mse_tr_d9, 'C0:')
-  _=axs[1].plot(gac_mean, mse_te_d1, 'C1:')
-  _=axs[1].plot(gac_mean, mse_te_d9, 'C1:')
-  _=axs[1].set_xlabel('GAC')
+  _=axs[1].plot(efc_mean, mse_tr_mean, 'C0', marker="o", markersize=3)
+  _=axs[1].plot(efc_mean, mse_te_mean, 'C1', marker="o", markersize=3)
+  _=axs[1].plot(efc_mean, mse_tr_d1, 'C0:')
+  _=axs[1].plot(efc_mean, mse_tr_d9, 'C0:')
+  _=axs[1].plot(efc_mean, mse_te_d1, 'C1:')
+  _=axs[1].plot(efc_mean, mse_te_d9, 'C1:')
+  _=axs[1].set_xlabel('EFC')
   _=axs[1].set_xscale('function', functions=(forward, inverse))
   _=axs[1].set_xticks(p_ticks)
   _=axs[1].set_xticklabels([f"{p:.3f}" for p in p_ticks])
@@ -143,8 +145,8 @@ for seed in range(10):
   if BOOT:
     fig.savefig('figures/mnist_rf_boot.pdf')
     with open('mnist_rf_boot.pkl','wb') as f:
-      pickle.dump((mse_tr_seeds, mse_te_seeds, gac_seeds, compl_proxy, XLAB, x_ticks, x_ticklabels), f)
+      pickle.dump((mse_tr_seeds, mse_te_seeds, efc_seeds, compl_proxy, XLAB, x_ticks, x_ticklabels), f)
   else:
     fig.savefig('figures/mnist_rf.pdf')
     with open('mnist_rf.pkl','wb') as f:
-      pickle.dump((mse_tr_seeds, mse_te_seeds, gac_seeds, gac_seeds, compl_proxy, XLAB, x_ticks, x_ticklabels), f)
+      pickle.dump((mse_tr_seeds, mse_te_seeds, efc_seeds, efc_seeds, compl_proxy, XLAB, x_ticks, x_ticklabels), f)

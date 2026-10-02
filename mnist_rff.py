@@ -16,7 +16,7 @@ def get_mse(Z, W, Y):
   preds = Z @ W
   return np.mean((preds - Y) ** 2)
 
-def get_gac(K):
+def get_efc(K):
   n=K.shape[0]
   Kr=np.diag(np.sqrt(1/(1e-8+np.diag(K))))@K@np.diag(np.sqrt(1/(1e-8+np.diag(K))))
   return 1-np.sum(np.square(np.eye(n)-Kr))/(n**2-n)
@@ -26,29 +26,29 @@ def run_for_feat_count(feat_count, X_tr, Y_tr, X_te, Y_te, seed):
   Ph_te = rff_features(X_te, feat_count, seed)
   Wh, *_ = np.linalg.lstsq(Ph_tr, Y_tr, rcond=None)
   K_tr=Ph_tr@Ph_tr.T
-  return get_mse(Ph_tr, Wh, Y_tr), get_mse(Ph_te, Wh, Y_te), get_gac(K_tr)
+  return get_mse(Ph_tr, Wh, Y_tr), get_mse(Ph_te, Wh, Y_te), get_efc(K_tr)
 
 feat_counts=np.unique(np.geomspace(1,10000,30).astype(int))
 XLAB='Number of RFFs'
 
 mse_tr_seeds = []
 mse_te_seeds = []
-gac_seeds=[]
+efc_seeds=[]
 
 for seed in range(100):
   X_tr, Y_tr, X_te, Y_te = load_mnist(n_tr=1000, n_te=1000, seed=seed, one_hot=True)
   results = Parallel(n_jobs=-1)(delayed(run_for_feat_count)(feat_count, X_tr, Y_tr, X_te, Y_te, seed) for feat_count in feat_counts)
   
-  mse_trs, mse_tes, gacs = zip(*results)
+  mse_trs, mse_tes, efcs = zip(*results)
   
-  for mse_tr, mse_te, gac in zip(mse_trs, mse_tes, gacs):
-    print( f'seed={seed:<2} | train loss={mse_tr:.4f} | test loss={mse_te:.4f} | gac={gac:.4f} | ')
+  for mse_tr, mse_te, efc in zip(mse_trs, mse_tes, efcs):
+    print( f'seed={seed:<2} | train loss={mse_tr:.4f} | test loss={mse_te:.4f} | efc={efc:.4f} | ')
   
   mse_tr_seeds.append(mse_trs)
   mse_te_seeds.append(mse_tes)
-  gac_seeds.append(gacs)
+  efc_seeds.append(efcs)
 
   with open('mnist_rff.pkl','wb') as f:
-    pickle.dump((mse_tr_seeds, mse_te_seeds, gac_seeds, gac_seeds, feat_counts, XLAB, 'log', None), f)
+    pickle.dump((mse_tr_seeds, mse_te_seeds, efc_seeds, efc_seeds, feat_counts, XLAB, 'log', None), f)
 
 

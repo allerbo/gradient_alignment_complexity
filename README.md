@@ -7,15 +7,10 @@ python compl_demo.py
 
 ## Figure 2:
 ```
-python pen_demo.py
-```
-
-## Figure 3:
-```
 python compl_demo_emp.py
 ```
 
-## Figure 4:
+## Figure 3:
 ```
 python mnist_rff.py
 python mnist_rf.py
@@ -23,6 +18,11 @@ python mnist_nn.py
 python cifar_nn.py
 python cifar_boost.py
 python plot_dd.py
+```
+
+## Figure 4:
+```
+python pen_demo.py
 ```
 
 ## Figure 5:
@@ -43,4 +43,10 @@ python plot_dd.py FIG2=True
 ## Figure 8:
 ```
 python mnist_rf.py BOOT=True
+```
+
+## Figure 9:
+```
+python mnist_20.py
+python cifar_20.py
 ```

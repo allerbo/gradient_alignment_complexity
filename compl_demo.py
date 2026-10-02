@@ -20,7 +20,7 @@ def kern(X,Y,alg,arg):
     return (c+X@Y.T)
 
 
-def get_gac(K_tr, K_te, lbda):
+def get_efc(K_tr, K_te, lbda):
   n_tr=K_tr.shape[0]
   Kr=np.diag(np.sqrt(1/(1e-8+np.diag(K_tr))))@K_tr@np.diag(np.sqrt(1/(1e-8+np.diag(K_tr))))
   return 1-np.sum(np.square(np.eye(n)-Kr))/(n_tr**2-n_tr)
@@ -71,11 +71,10 @@ ps=range(1,31)
 ds=range(1,101)
 
 
-COMPL_DICT={'GAC': 'compl_gacs', 'ENP': 'compl_enps', 'GENP-V': 'compl_genps', 'vNE': 'compl_vnes', 'GENP-RX': 'compl_rxs', '$\\|\\hat{\\theta}\\|^2_2$': 'compl_norms'}
-LABS_DICT={'gac': 'GAC', 'vne': 'vNE', 'enp': 'ENP', 'genpv': 'GENP-V', 'genprx': 'GENP-RX', 'norm': '$\\|\\hat{\\theta}\\|^2_2$'}
-ALGS_DICT={'gac': get_gac, 'vne': get_vne, 'enp': get_enp, 'genpv': get_genpv, 'genprx': get_genprx, 'norm': get_norm}
+LABS_DICT={'efc': 'EFC', 'vne': 'vNE', 'enp': 'ENP', 'genpv': 'GENP-V (right y-axis)', 'genprx': 'GENP-RX', 'norm': '$\\|\\hat{\\theta}\\|^2_2$ (right y-axis)'}
+ALGS_DICT={'efc': get_efc, 'vne': get_vne, 'enp': get_enp, 'genpv': get_genpv, 'genprx': get_genprx, 'norm': get_norm}
 
-COMPL_ALGS=['gac', 'enp', 'genpv', 'genprx']
+COMPL_ALGS=['efc', 'enp', 'genpv', 'genprx']
 FIG_APDX=''
 FIG2=False
 
@@ -83,7 +82,7 @@ for arg in range(1,len(sys.argv)):
   exec(sys.argv[arg])
 
 if FIG2:
-  COMPL_ALGS=['gac', 'enp', 'genpv', 'genprx', 'vne', 'norm']
+  COMPL_ALGS=['efc', 'enp', 'genpv', 'genprx', 'vne', 'norm']
   FIG_APDX='2'
 
 
@@ -100,7 +99,7 @@ for alg, title, xlab, sweeps, axs in zip(['lin','pol','gauss'], ['Linear', 'Poly
   n=50
   ax0_twin1=axs[0].twinx()
   ax1_twin1=axs[1].twinx()
-  ax_dict={'gac': axs[0], 'vne': axs[0], 'enp': axs[0], 'genpv': ax0_twin1, 'genprx': axs[0], 'norm': ax0_twin1}
+  ax_dict={'efc': axs[0], 'vne': axs[0], 'enp': axs[0], 'genpv': ax0_twin1, 'genprx': axs[0], 'norm': ax0_twin1}
   compls_sweep={}
   for compl_alg in COMPL_ALGS:
     compls_sweep[compl_alg]=[]
@@ -129,6 +128,7 @@ for alg, title, xlab, sweeps, axs in zip(['lin','pol','gauss'], ['Linear', 'Poly
     else:
       ax_dict[compl_alg].plot(sweeps, np.mean(np.array(compls_sweep[compl_alg]),axis=1), 'C'+str(c), zorder=10-c)
   ax0_twin1.set_yscale('log')
+  ax0_twin1.tick_params(axis='y',labelcolor='#1A601A')
   if alg=='lin':
     axs[0].set_ylabel('Complexity')
   if alg=='gauss':
@@ -139,7 +139,7 @@ for alg, title, xlab, sweeps, axs in zip(['lin','pol','gauss'], ['Linear', 'Poly
   fig.tight_layout()
   fig.savefig('figures/compl_demo'+FIG_APDX+'.pdf')
   
-  ax_dict={'gac': axs[1], 'vne': axs[1], 'enp': axs[1], 'genpv': ax1_twin1, 'genprx': axs[1], 'norm': ax1_twin1}
+  ax_dict={'efc': axs[1], 'vne': axs[1], 'enp': axs[1], 'genpv': ax1_twin1, 'genprx': axs[1], 'norm': ax1_twin1}
   ns=np.unique(np.geomspace(5,100,50).astype(int))
   if alg == 'gauss':
     arg=1
@@ -176,6 +176,7 @@ for alg, title, xlab, sweeps, axs in zip(['lin','pol','gauss'], ['Linear', 'Poly
       ax_dict[compl_alg].plot(ns, np.mean(np.array(compls_n[compl_alg]),axis=1), 'C'+str(c), zorder=10-c)
   
   ax1_twin1.set_yscale('log')
+  ax1_twin1.tick_params(axis='y',labelcolor='#1A601A')
   axs[1].set_xscale('log')
   axs[1].set_xlabel('n')
   axs[1].set_ylim([-0.05, 1.05])

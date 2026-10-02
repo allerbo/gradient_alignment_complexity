@@ -1,6 +1,5 @@
 import numpy as np
 from matplotlib import pyplot as plt
-import sys
 from matplotlib.lines import Line2D
 plt.rcParams.update({'pdf.fonttype': 42, 'text.usetex': True, 'font.family': 'serif', 'font.serif': ['Computer Modern Roman']})
 
@@ -12,7 +11,7 @@ def kern_gauss(x,y,sigma):
   return np.exp(-0.5*((x-y.T)/sigma)**2)
 
 
-def get_gac(K):
+def get_efc(K):
   n=K.shape[0]
   Kr=np.diag(np.sqrt(1/(1e-8+np.diag(K))))@K@np.diag(np.sqrt(1/(1e-8+np.diag(K))))
   return 1-np.sum(np.square(np.eye(n)-Kr))/(n**2-n)
@@ -28,7 +27,7 @@ def get_fh_and_compls(x_te, x_tr, y_tr, sigma, lbda):
   K_tr=kern_gauss(x_tr,x_tr,sigma)
   K_te=kern_gauss(x_te,x_tr,sigma)
   fh_te=K_te@np.linalg.solve(K_tr+lbda*I,y_tr)
-  return fh_te, get_gac(K_tr), get_enp(K_tr, lbda)
+  return fh_te, get_efc(K_tr), get_enp(K_tr, lbda)
 
 n_tr=20
 n_te=1001
@@ -44,13 +43,13 @@ f_te=f_sin(x_te)
 
 lines=[]
 labs=[]
-fig,ax=plt.subplots(1,1,figsize=(5,3))
+fig,ax=plt.subplots(1,1,figsize=(4,2))
 _=ax.plot(x_tr,y_tr,'ok', ms=3)
 for c, sigma, lbda in zip([1,2], SIGMAS, LBDAS):
-  fh_te, gac, enp = get_fh_and_compls(x_te, x_tr, y_tr, sigma, lbda)
+  fh_te, efc, enp = get_fh_and_compls(x_te, x_tr, y_tr, sigma, lbda)
   _=ax.plot(x_te,fh_te,'C'+str(c))
   lines.append(Line2D([0],[0],color='C'+str(c),lw=2))
-  labs.append(f'$l$={sigma}, $\\lambda$={lbda}, GAC={gac:.2f}, ENP={enp:.2f}')
+  labs.append(f'$l$={sigma}, $\\lambda$={lbda}, EFC={efc:.2f}, ENP={enp:.2f}')
 
 _=ax.set_xticks([])
 _=ax.set_yticks([])
@@ -59,4 +58,3 @@ fig.legend(lines, labs, loc='lower center', ncol=1)
 fig.tight_layout()
 fig.subplots_adjust(bottom=.28)
 fig.savefig('figures/pen_demo.pdf')
-

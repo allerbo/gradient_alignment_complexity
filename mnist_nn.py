@@ -32,7 +32,7 @@ def squared_loss(logits, labels):
 
 
 @jax.jit
-def get_gac(state,x):
+def get_efc(state,x):
   def fh(x,params,state):
     logits = state.apply_fn({"params": params}, x)
     return logits
@@ -86,13 +86,13 @@ def train_model(rng, X_tr, y_tr, X_te, y_te, hidden, dim_y, epochs, lr, gamma, r
         new_params[layer][name] = updated
     state = state.replace(params=new_params)
   
-  gacs=[]
+  efcs=[]
   loss_diffs=[]
   loss_old=squared_loss(state.apply_fn({"params": state.params}, X_tr), y_tr)
   for epoch in range(epochs):
     state, loss = train_step(state, X_tr, y_tr)
     if epoch % 5 == 0:
-      gacs.append(get_gac(state, np.random.permutation(X_tr)[:20,:]))
+      efcs.append(get_efc(state, np.random.permutation(X_tr)[:20,:]))
       loss_diffs.append(np.maximum(0,loss_old-loss))
       loss_old=loss
   
@@ -100,7 +100,7 @@ def train_model(rng, X_tr, y_tr, X_te, y_te, hidden, dim_y, epochs, lr, gamma, r
   logits_te = model.apply({"params": state.params}, X_te)
   mse_tr = float(squared_loss(logits_tr, y_tr))
   mse_te = float(squared_loss(logits_te, y_te))
-  return state.params, mse_tr, mse_te, param_count, np.mean(np.array(gacs)*np.array(loss_diffs))/np.mean(loss_diffs), np.max(gacs)
+  return state.params, mse_tr, mse_te, param_count, np.mean(np.array(efcs)*np.array(loss_diffs))/np.mean(loss_diffs), np.max(efcs)
 
 
 
@@ -108,19 +108,19 @@ def run_sweep(seed, X_tr, y_tr, X_te, y_te, dim_hs, dim_y, epochs, lr, gamma, re
   rng = jax.random.PRNGKey(0)
   mse_trs = []
   mse_tes = []
-  tot_gacs = []
-  max_gacs = []
+  tot_efcs = []
+  max_efcs = []
   prev_params = None
   for h in dim_hs:
     rng, sub = jax.random.split(rng)
-    params, mse_tr, mse_te, param_count, tot_gac, max_gac = train_model(sub, X_tr, y_tr, X_te, y_te, h, dim_y, epochs, lr, gamma, reuse_params=prev_params if reuse else None)
+    params, mse_tr, mse_te, param_count, tot_efc, max_efc = train_model(sub, X_tr, y_tr, X_te, y_te, h, dim_y, epochs, lr, gamma, reuse_params=prev_params if reuse else None)
     prev_params = params
     mse_trs.append(mse_tr)
     mse_tes.append(mse_te)
-    tot_gacs.append(tot_gac)
-    max_gacs.append(max_gac)
-    print(f'seed={seed} | h={h:<4} | params={param_count:<5} | train loss={mse_tr:.4f} | test loss={mse_te:.4f} | tot gac={tot_gac:.4f} | max gac={max_gac:.4f} | ')
-  return np.array(mse_trs), np.array(mse_tes), np.array(tot_gacs), np.array(max_gacs)
+    tot_efcs.append(tot_efc)
+    max_efcs.append(max_efc)
+    print(f'seed={seed} | h={h:<4} | params={param_count:<5} | train loss={mse_tr:.4f} | test loss={mse_te:.4f} | tot efc={tot_efc:.4f} | max efc={max_efc:.4f} | ')
+  return np.array(mse_trs), np.array(mse_tes), np.array(tot_efcs), np.array(max_efcs)
 
 
 seed=0
@@ -135,16 +135,16 @@ print(DIM_HS)
 
 mse_tr_seeds = []
 mse_te_seeds = []
-tot_gac_seeds = []
-max_gac_seeds = []
+tot_efc_seeds = []
+max_efc_seeds = []
 for seed in range(10):
   X_tr, y_tr, X_te, y_te = load_mnist(n_tr=1000, n_te=1000,seed=seed, down=True)
-  mse_trs, mse_tes, tot_gacs, max_gacs = run_sweep(seed, X_tr, y_tr, X_te, y_te, DIM_HS, DIM_Y, EPOCHS, LR, GAMMA, reuse=True)
+  mse_trs, mse_tes, tot_efcs, max_efcs = run_sweep(seed, X_tr, y_tr, X_te, y_te, DIM_HS, DIM_Y, EPOCHS, LR, GAMMA, reuse=True)
   mse_tr_seeds.append(mse_trs)
   mse_te_seeds.append(mse_tes)
-  tot_gac_seeds.append(tot_gacs)
-  max_gac_seeds.append(max_gacs)
+  tot_efc_seeds.append(tot_efcs)
+  max_efc_seeds.append(max_efcs)
   
   with open('mnist_nn.pkl','wb') as f:
-    pickle.dump((mse_tr_seeds, mse_te_seeds, tot_gac_seeds, max_gac_seeds, DIM_HS, 'Hidden Units', 'log', None), f)
+    pickle.dump((mse_tr_seeds, mse_te_seeds, tot_efc_seeds, max_efc_seeds, DIM_HS, 'Hidden Units', 'log', None), f)
 

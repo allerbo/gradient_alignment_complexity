@@ -21,7 +21,7 @@ def get_mse(y,fh):
   return np.mean((y-fh)**2)
 
 
-def get_gac(tree, X):
+def get_efc(tree, X):
   n = X.shape[0]
   P = tree.decision_path(X)[:, 1:]
   K1 = (P @ P.T).toarray()
@@ -35,7 +35,7 @@ def run_for_depth(max_depth, X_tr, y_tr, X_te, y_te, seed):
   fh_te = y_tr_mean * np.ones((N_TE, 1))
   fh_tr_old = y_tr_mean * np.ones((N_TR, 1))
   fh_te_old = y_tr_mean * np.ones((N_TE, 1))
-  gacs = []
+  efcs = []
   loss_diffs = []
   loss_old= y_tr_mean
   for m in range(EPOCHS):
@@ -50,33 +50,33 @@ def run_for_depth(max_depth, X_tr, y_tr, X_te, y_te, seed):
     fh_te_old=np.copy(fh_te)
     fh_tr += (LR * h_tr + GAMMA*fh_tr_diff)
     fh_te += (LR * h_te + GAMMA*fh_te_diff)
-    gacs.append(get_gac(tree, X_tr))
+    efcs.append(get_efc(tree, X_tr))
     loss=np.sum(np.square(y_tr-fh_tr))
     loss_diffs.append(np.maximum(0,loss_old - loss))
     loss_old=loss
   
   mse_tr = get_mse(y_tr, fh_tr)
   mse_te = get_mse(y_te, fh_te)
-  tot_gac = np.mean(np.array(gacs) * np.array(loss_diffs)) / np.mean(loss_diffs)
-  max_gac = np.max(gacs)
-  return mse_tr, mse_te, tot_gac, max_gac
+  tot_efc = np.mean(np.array(efcs) * np.array(loss_diffs)) / np.mean(loss_diffs)
+  max_efc = np.max(efcs)
+  return mse_tr, mse_te, tot_efc, max_efc
 
 mse_tr_seeds=[]
 mse_te_seeds=[]
-tot_gac_seeds=[]
-max_gac_seeds=[]
+tot_efc_seeds=[]
+max_efc_seeds=[]
 for seed in range(10):
   X_tr, y_tr, X_te, y_te = load_cifar(N_TR, N_TE, seed)
   results = Parallel(n_jobs=-1)(delayed(run_for_depth)(max_depth, X_tr, y_tr, X_te, y_te, seed) for max_depth in MAX_DEPTHS)
-  mse_trs, mse_tes, tot_gacs, max_gacs = zip(*results)
-  for max_depth, mse_tr, mse_te, tot_gac, max_gac in zip(MAX_DEPTHS, mse_trs, mse_tes, tot_gacs, max_gacs):
-    print(f'seed={seed} | max_depth={max_depth:<2} | train loss={mse_tr:.4f} | test loss={mse_te:.4f} | tot gac={tot_gac:.4f} | max gac={max_gac:.4f} | ')
+  mse_trs, mse_tes, tot_efcs, max_efcs = zip(*results)
+  for max_depth, mse_tr, mse_te, tot_efc, max_efc in zip(MAX_DEPTHS, mse_trs, mse_tes, tot_efcs, max_efcs):
+    print(f'seed={seed} | max_depth={max_depth:<2} | train loss={mse_tr:.4f} | test loss={mse_te:.4f} | tot efc={tot_efc:.4f} | max efc={max_efc:.4f} | ')
   
   mse_tr_seeds.append(mse_trs)
   mse_te_seeds.append(mse_tes)
-  tot_gac_seeds.append(tot_gacs)
-  max_gac_seeds.append(max_gacs)
+  tot_efc_seeds.append(tot_efcs)
+  max_efc_seeds.append(max_efcs)
   
   with open('cifar_boost.pkl','wb') as f:
-    pickle.dump((mse_tr_seeds, mse_te_seeds, tot_gac_seeds, max_gac_seeds, MAX_DEPTHS, 'Max Depth', None, None), f)
+    pickle.dump((mse_tr_seeds, mse_te_seeds, tot_efc_seeds, max_efc_seeds, MAX_DEPTHS, 'Max Depth', None, None), f)
 
